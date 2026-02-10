@@ -1,0 +1,157 @@
+
+hello_uart.elf:     file format elf32-littlearm
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         000000aa  08000000  08000000  00001000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .init         00000004  080000ac  080000ac  000010ac  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  2 .fini         00000004  080000b0  080000b0  000010b0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  3 .ARM.attributes 00000032  00000000  00000000  000010b4  2**0
+                  CONTENTS, READONLY
+  4 .comment      00000043  00000000  00000000  000010e6  2**0
+                  CONTENTS, READONLY
+  5 .debug_info   0000011b  00000000  00000000  00001129  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  6 .debug_abbrev 000000cc  00000000  00000000  00001244  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  7 .debug_aranges 00000038  00000000  00000000  00001310  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  8 .debug_rnglists 00000025  00000000  00000000  00001348  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  9 .debug_macro  00000f8c  00000000  00000000  0000136d  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+ 10 .debug_line   00000492  00000000  00000000  000022f9  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+ 11 .debug_str    00003cb4  00000000  00000000  0000278b  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+ 12 .debug_frame  000000a0  00000000  00000000  00006440  2**2
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+
+Disassembly of section .text:
+
+08000000 <delay>:
+#define USART3_BASE 0x40004800UL
+#define USART3_ISR  (*(volatile uint32_t*)(USART3_BASE + 0x1C))
+#define USART3_TDR  (*(volatile uint32_t*)(USART3_BASE + 0x28))
+
+static void delay(volatile uint32_t t)
+{
+ 8000000:	b480      	push	{r7}
+ 8000002:	b083      	sub	sp, #12
+ 8000004:	af00      	add	r7, sp, #0
+ 8000006:	6078      	str	r0, [r7, #4]
+    while(t--) __asm("nop");
+ 8000008:	e000      	b.n	800000c <delay+0xc>
+ 800000a:	bf00      	nop
+ 800000c:	687b      	ldr	r3, [r7, #4]
+ 800000e:	1e5a      	subs	r2, r3, #1
+ 8000010:	607a      	str	r2, [r7, #4]
+ 8000012:	2b00      	cmp	r3, #0
+ 8000014:	d1f9      	bne.n	800000a <delay+0xa>
+}
+ 8000016:	bf00      	nop
+ 8000018:	bf00      	nop
+ 800001a:	370c      	adds	r7, #12
+ 800001c:	46bd      	mov	sp, r7
+ 800001e:	bc80      	pop	{r7}
+ 8000020:	4770      	bx	lr
+	...
+
+08000024 <uart_send_char>:
+
+void uart_send_char(char c)
+{
+ 8000024:	b480      	push	{r7}
+ 8000026:	b083      	sub	sp, #12
+ 8000028:	af00      	add	r7, sp, #0
+ 800002a:	4603      	mov	r3, r0
+ 800002c:	71fb      	strb	r3, [r7, #7]
+    while(!(USART3_ISR & (1 << 7)));
+ 800002e:	bf00      	nop
+ 8000030:	4b06      	ldr	r3, [pc, #24]	@ (800004c <uart_send_char+0x28>)
+ 8000032:	681b      	ldr	r3, [r3, #0]
+ 8000034:	f003 0380 	and.w	r3, r3, #128	@ 0x80
+ 8000038:	2b00      	cmp	r3, #0
+ 800003a:	d0f9      	beq.n	8000030 <uart_send_char+0xc>
+    USART3_TDR = c;
+ 800003c:	4a04      	ldr	r2, [pc, #16]	@ (8000050 <uart_send_char+0x2c>)
+ 800003e:	79fb      	ldrb	r3, [r7, #7]
+ 8000040:	6013      	str	r3, [r2, #0]
+}
+ 8000042:	bf00      	nop
+ 8000044:	370c      	adds	r7, #12
+ 8000046:	46bd      	mov	sp, r7
+ 8000048:	bc80      	pop	{r7}
+ 800004a:	4770      	bx	lr
+ 800004c:	4000481c 	.word	0x4000481c
+ 8000050:	40004828 	.word	0x40004828
+
+08000054 <uart_print>:
+
+void uart_print(const char *s)
+{
+ 8000054:	b580      	push	{r7, lr}
+ 8000056:	b082      	sub	sp, #8
+ 8000058:	af00      	add	r7, sp, #0
+ 800005a:	6078      	str	r0, [r7, #4]
+    while(*s)
+ 800005c:	e006      	b.n	800006c <uart_print+0x18>
+        uart_send_char(*s++);
+ 800005e:	687b      	ldr	r3, [r7, #4]
+ 8000060:	1c5a      	adds	r2, r3, #1
+ 8000062:	607a      	str	r2, [r7, #4]
+ 8000064:	781b      	ldrb	r3, [r3, #0]
+ 8000066:	4618      	mov	r0, r3
+ 8000068:	f7ff ffdc 	bl	8000024 <uart_send_char>
+    while(*s)
+ 800006c:	687b      	ldr	r3, [r7, #4]
+ 800006e:	781b      	ldrb	r3, [r3, #0]
+ 8000070:	2b00      	cmp	r3, #0
+ 8000072:	d1f4      	bne.n	800005e <uart_print+0xa>
+}
+ 8000074:	bf00      	nop
+ 8000076:	bf00      	nop
+ 8000078:	3708      	adds	r7, #8
+ 800007a:	46bd      	mov	sp, r7
+ 800007c:	bd80      	pop	{r7, pc}
+	...
+
+08000080 <main>:
+
+int main(void)
+{
+ 8000080:	b580      	push	{r7, lr}
+ 8000082:	af00      	add	r7, sp, #0
+    while(1)
+    {
+        uart_print("Hello world\r\n");
+ 8000084:	4803      	ldr	r0, [pc, #12]	@ (8000094 <main+0x14>)
+ 8000086:	f7ff ffe5 	bl	8000054 <uart_print>
+        delay(8000000);
+ 800008a:	4803      	ldr	r0, [pc, #12]	@ (8000098 <main+0x18>)
+ 800008c:	f7ff ffb8 	bl	8000000 <delay>
+        uart_print("Hello world\r\n");
+ 8000090:	bf00      	nop
+ 8000092:	e7f7      	b.n	8000084 <main+0x4>
+ 8000094:	0800009c 	.word	0x0800009c
+ 8000098:	007a1200 	.word	0x007a1200
+ 800009c:	6c6c6548 	.word	0x6c6c6548
+ 80000a0:	6f77206f 	.word	0x6f77206f
+ 80000a4:	0d646c72 	.word	0x0d646c72
+ 80000a8:	Address 0x80000a8 is out of bounds.
+
+
+Disassembly of section .init:
+
+080000ac <_init>:
+ 80000ac:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
+ 80000ae:	bf00      	nop
+
+Disassembly of section .fini:
+
+080000b0 <_fini>:
+ 80000b0:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
+ 80000b2:	bf00      	nop
